@@ -1,0 +1,16 @@
+{
+  "signature": "5mockedTransferTx11111111111111111111111111111111111111111111111111111",
+  "instructions": [
+    {
+      "programId": "11111111111111111111111111111111",
+      "parsed": {
+        "type": "transfer",
+        "info": {
+          "source": "WATCHED_WALLET_ADDRESS_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+          "destination": "DESTINATION_WALLET_ADDRESS_YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY",
+          "lamports": 5000000000
+        }
+      }
+    }
+  ]
+}

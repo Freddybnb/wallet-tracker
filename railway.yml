@@ -1,0 +1,204 @@
+# Railway configuration — Solana Wallet Tracker
+# https://railway.app
+
+# ═════════════════════════════════════════════════════════════════════════
+#  RAILWAY SETUP
+#  This file tells Railway how to build & run your app.
+#  Push this repo to GitHub → connect to Railway → deploy.
+# ═════════════════════════════════════════════════════════════════════════
+
+# ─── Build settings ───────────────────────────────────────────────────────
+[tasks]
+  # Commands run during build phase
+  install = pip install -r requirements.txt
+  # Optional: run tests during build
+  # test = python -m tests.test_integration
+
+# ─── Deploy settings ──────────────────────────────────────────────────────
+[deploy]
+  # Number of instances (1 = free, >1 = paid)
+  num_instances = 1
+  # Restart policy — always (Railway restarts crashed)
+  restart = always
+  # Start command — uses Procfile by default if present
+  # command = "python -m uvicorn server:app --host 0.0.0.0 --port $PORT"
+  # Healthcheck endpoint (Railway pings this to know app is alive)
+  healthcheck = "/"
+
+# ─── Environment variables ───────────────────────────────────────────────
+# Define defaults here (overridden in Railway dashboard).
+# Railway UI → Variables tab is the source of truth.
+# Delete these from .env before committing! (Railway manages env itself)
+
+[variables]
+  # Python environment
+  PYTHON_VERSION = "3.11"
+
+  # App config (replace with your real values in Railway dashboard)
+  HELIUS_API_KEY = "helius_sk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  WEBHOOK_SECRET = "0123456789abcdef0123456789abcdef"
+  PORT = "8000"
+  LOG_LEVEL = "INFO"
+  DEFAULT_MIN_AMOUNT = "0.1"
+
+  # Database (Railway provides SQLite file in $VOLUME_PATH if you mount)
+  # For simplicity in this example we use local ./data (ephemeral)
+  # For persistence: enable "Volumes" in Railway and set:
+  # DATABASE_URL = "sqlite+aiosqlite:///data/wallet_tracker.db"
+  DATABASE_URL = "sqlite+aiosqlite:///./data/wallet_tracker.db"
+
+# ─── Services (optional) ─────────────────────────────────────────────────
+# If you want a separate Postgres (instead of SQLite) add:
+#
+# [services.postgres]
+#   plan = "free"
+#   version = "15"
+#
+# Then Railway injects DATABASE_URL automatically.
+# Uncomment database.py lines to switch to Postgres.
+
+# ─── Volumes (persistent disk) ────────────────────────────────────────────
+# SQLite file needs persistence across deploys.
+# Enable "Volumes" in Railway UI and set:
+#
+# [volumes]
+#   data = "/data"
+#
+# Then set DATABASE_URL = "sqlite+aiosqlite:///data/wallet_tracker.db"
+# This keeps your DB across restarts.
+
+# ─── Domains (HTTPS auto) ────────────────────────────────────────────────
+# Railway gives you: https://<your-app>.railway.app
+# No SSL setup needed — handled by Railway.
+# Webhook URL to configure in Helius:
+#   https://<your-app>.railway.app/webhook
+
+# ─── Observability (optional) ────────────────────────────────────────────
+# [metrics]
+#   format = "prometheus"
+#   path = "/metrics"
+
+# ─── Resource limits (free tier) ─────────────────────────────────────────
+# Free tier: 512 MB RAM, 1 vCPU, 1 GB disk, 500 hrs/month
+# Paid: scale as needed
+
+# ─── Backup strategy ─────────────────────────────────────────────────────
+# Railway provides automatic daily backups (last 7 days).
+# Manual backup (recommended):
+#   railway download --service <name> data/wallet_tracker.db backups/
+
+# ═════════════════════════════════════════════════════════════════════════
+#  QUICK DEPLOY STEPS
+# ═════════════════════════════════════════════════════════════════════════
+
+# 1. Push this repo to GitHub
+#    git add .
+#    git commit -m "Add Railway config"
+#    git push origin main
+
+# 2. Go to https://railway.app → New Project → Deploy from GitHub repo
+#    Choose your repository.
+
+# 3. Configure environment variables:
+#    Railway Dashboard → Your Project → Variables
+#      HELIUS_API_KEY = your_key_here
+#      WEBHOOK_SECRET = 32_hex_chars (generate: python -c "import secrets; print(secrets.token_hex(16))")
+#      DEFAULT_MIN_AMOUNT = 0.1  (or whatever default)
+#
+#    DO NOT commit real secrets — set them in Railway UI only.
+
+# 4. Enable Persistent Storage (optional but recommended):
+#    Railway Dashboard → Your Project → Storage → Add Volume
+#    Mount path: /data
+#    Then set DATABASE_URL = "sqlite+aiosqlite:///data/wallet_tracker.db"
+
+# 5. Deploy!
+#    Railway builds and deploys automatically on git push.
+#    Wait for "Deployment succeeded" → green checkmark.
+
+# 6. Get your public URL:
+#    Railway Dashboard → Your Project → Settings → Domain
+#    It looks like: https://wallet-tracker-production.up.railway.app
+#
+#    Your webhook endpoint is:
+#      https://<your-domain>/webhook
+
+# 7. Configure Helius:
+#    - Go to https://dev.helius.xyz/dashboard/webhooks
+#    - Create webhook:
+#        URL: https://<your-railway-domain>/webhook
+#        Accounts: add your wallets to monitor
+#        Types: TRANSFER
+#        Webhook Secret: same as Railway variable WEBHOOK_SECRET
+#    - Save
+
+# 8. Test:
+#    curl https://<your-railway-domain>/stats
+#    Should return JSON with stats.
+
+# 9. Add your first wallet:
+#    curl -X POST https://<your-railway-domain>/wallets \
+#      -H "Content-Type: application/json" \
+#      -d '{"address":"YOUR_WALLET","min_amount":0.5}'
+
+# 10. Monitor logs:
+#     Railway Dashboard → Your Project → Deployments → View Logs
+#     (or: railway logs --follow)
+
+# ─── Useful Railway CLI commands ─────────────────────────────────────────
+# Install Railway CLI: npm i -g @railway/cli
+#
+# railway login                    # Auth
+# railway link <project>           # Link local dir to remote project
+# railway up                       # Manual deploy
+# railway logs --follow            # Tail logs
+# railway variables                # List env vars
+# railway variables set KEY VAL    # Set env var
+# railway download --service <svc> data/wallet_tracker.db ./backup.db  # Backup DB
+# railway domains                  # List domains
+# railway shell                    # SSH into container (debug)
+
+# ─── Scaling (paid) ───────────────────────────────────────────────────────
+# Free tier: 1 instance, sleeps after 30min of inactivity (cold start ~5s)
+# Paid ($5/mo): 1 instance always awake
+# Paid ($20/mo): 2+ instances (load balanced)
+#
+# To keep always awake (free workaround): UptimeRobot ping every 25min.
+# Or upgrade to "Pro" plan.
+
+# ─── Monitoring ───────────────────────────────────────────────────────────
+# Railway provides metrics (CPU, memory, bandwidth) in dashboard.
+# Add custom metrics later (Prometheus endpoint /metrics).
+
+# ─── Cost ────────────────────────────────────────────────────────────────
+# Free tier: 500 hours/month (≈ 20 days) + $5 credit = 600h/month total
+# Sufficient for a personal tracker.
+# If you need 24/7: $5/month "Pro" plan.
+
+# ─── Rollback ────────────────────────────────────────────────────────────
+# Railway keeps last 10 deployments.
+# Dashboard → Deployments → Redeploy any previous commit.
+
+# ─── Troubleshooting ─────────────────────────────────────────────────────
+# Problem: Build fails ("No module named 'server'")
+#   → Ensure Procfile at repo root (not in subdir)
+#   → Procfile must not have extension (no .txt, .sh)
+#
+# Problem: 502 Bad Gateway
+#   → Check logs: railway logs --follow
+#   → Likely: import error, missing env var, port mismatch
+#
+# Problem: DB not persisting
+#   → Enable Volume at /data, update DATABASE_URL
+#   → Or switch to Postgres (better for multi-instance)
+#
+# Problem: Webhook not received
+#   → Verify URL correct: https://<your-app>.railway.app/webhook
+#   → Check Helius webhook secret matches Railway WEBHOOK_SECRET
+#   → Railway domain must be HTTPS (it is)
+#   → Check Railway logs for 401/invalid secret
+
+# ═════════════════════════════════════════════════════════════════════════
+#  THAT'S IT!
+#  Railway automates everything — just push code.
+# ═════════════════════════════════════════════════════════════════════════
